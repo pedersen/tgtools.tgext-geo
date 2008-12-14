@@ -1,0 +1,3 @@
+TurboGears2 >= 1.9.7
+MapFish >= 0.3
+TileCache >= 2.0

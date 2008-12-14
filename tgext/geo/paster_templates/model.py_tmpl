@@ -1,0 +1,20 @@
+from pylons import config
+
+from sqlalchemy import Column, MetaData, Table, types
+from sqlalchemy.orm import mapper
+
+from mapfish.sqlalchemygeom import Geometry
+from mapfish.sqlalchemygeom import GeometryTableMixIn
+
+${modelTabObj} = Table(
+    '${table}',
+    MetaData(config['pylons.app_globals'].sa_engine),
+    Column('${geomColName}', Geometry(${epsg})),
+    autoload=True)
+
+class ${modelClass}(GeometryTableMixIn):
+    # for GeometryTableMixIn to do its job the __table__ property
+    # must be set here
+    __table__ = ${modelTabObj}
+
+mapper(${modelClass}, ${modelTabObj})

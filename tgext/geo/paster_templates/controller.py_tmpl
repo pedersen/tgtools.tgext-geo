@@ -1,0 +1,60 @@
+from ${basePkg}.lib.base import *
+from ${basePkg}.model import DBSession
+from ${basePkg}.model.${modName} import ${modelClass}
+from tg import expose, request, response, postpone_commits
+from mapfish.lib.filters import *
+from mapfish.lib.protocol import Protocol, create_default_filter
+
+class ${contrClass}Controller(BaseController):
+    readonly = False # if set to True, only GET is supported
+
+    def __init__(self):
+        self.protocol = Protocol(DBSession, ${modelClass}, self.readonly)
+
+    @expose()
+    def index(self, format='json'):
+        """GET /: return all features."""
+        #
+        # If you need your own filter with application-specific params 
+        # taken into acount, create your own filter and pass it to the
+        # protocol index method.
+        #
+        # E.g.
+        #
+        # default_filter = create_default_filter(
+        #     request,
+        #     ${modelClass}.primary_key_column(),
+        #     ${modelClass}.geometry_column()
+        # )
+        # compare_filter = comparison.Comparison(
+        #     comparison.Comparison.ILIKE,
+        #     ${modelClass}.mycolumnname,
+        #     value=myvalue
+        # )
+        # filter = logical.Logical(logical.Logical.AND, [default_filter, compare_filter])
+        # return self.protocol.index(request, response, format=format, filter=filter)
+        #
+        return self.protocol.index(request, response, format=format)
+
+    @expose()
+    def show(self, id, format='json'):
+        """GET /id: Show a specific feature."""
+        return self.protocol.show(request, response, id, format=format)
+
+    @expose()
+    @postpone_commits
+    def create(self):
+        """POST /: Create a new feature."""
+        return self.protocol.create(request, response)
+
+    @expose()
+    @postpone_commits
+    def update(self, id):
+        """PUT /id: Update an existing feature."""
+        return self.protocol.update(request, response, id)
+
+    @expose()
+    @postpone_commits
+    def delete(self, id):
+        """DELETE /id: Delete an existing feature."""
+        return self.protocol.delete(request, response, id)

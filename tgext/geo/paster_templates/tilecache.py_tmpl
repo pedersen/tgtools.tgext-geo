@@ -1,0 +1,23 @@
+import logging
+import pylons
+from ${basePkg}.lib.base import *
+from tg import expose, request
+
+from TileCache.Service import Service, wsgiHandler
+from TileCache.Caches.${cacheType} import ${cacheType}
+${importString}
+
+log = logging.getLogger(__name__)
+
+tileService = Service(
+  ${cacheType}("${baseDir}"),
+  {  ${layersString}  }
+)
+
+class ${contrClass}Controller(BaseController):
+
+    @expose()
+    def index(self, *args, **kwargs):
+        return wsgiHandler(pylons.request.environ,
+                        pylons.request.start_response, tileService)
+
