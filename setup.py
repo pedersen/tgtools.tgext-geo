@@ -23,8 +23,8 @@ setup(name='tgext.geo',
       entry_points="""
       [paste.paster_command]
       geo-controller = tgext.geo.commands:TGGeoControllerCommand
-      geo-model = tg.extgeo.commands:TGGeoModelCommand
-      geo-layer = tg.extgeo.commands:TGGeoLayerCommand
+      geo-model = tgext.geo.commands:TGGeoModelCommand
+      geo-layer = tgext.geo.commands:TGGeoLayerCommand
       geo-tilecache = tgext.geo.commands:TGGeoTileCacheCommand
       """,
       )
