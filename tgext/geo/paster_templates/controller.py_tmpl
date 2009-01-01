@@ -12,7 +12,7 @@ class ${contrClass}Controller(BaseController):
         self.protocol = Protocol(DBSession, ${modelClass}, self.readonly)
 
     @expose()
-    def index(self, format='json'):
+    def index(self, format='json', **kw):
         """GET /: return all features."""
         #
         # If you need your own filter with application-specific params 
@@ -37,24 +37,24 @@ class ${contrClass}Controller(BaseController):
         return self.protocol.index(request, response, format=format)
 
     @expose()
-    def show(self, id, format='json'):
+    def show(self, id, format='json', **kw):
         """GET /id: Show a specific feature."""
         return self.protocol.show(request, response, id, format=format)
 
     @expose()
     @postpone_commits
-    def create(self):
+    def create(self, **kw):
         """POST /: Create a new feature."""
         return self.protocol.create(request, response)
 
     @expose()
     @postpone_commits
-    def update(self, id):
+    def update(self, id, **kw):
         """PUT /id: Update an existing feature."""
         return self.protocol.update(request, response, id)
 
     @expose()
     @postpone_commits
-    def delete(self, id):
+    def delete(self, id, **kw):
         """DELETE /id: Delete an existing feature."""
         return self.protocol.delete(request, response, id)
