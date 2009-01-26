@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '0.4'
+version = '0.5'
 
 setup(name='tgext.geo',
       version=version,
@@ -14,8 +14,8 @@ setup(name='tgext.geo',
       url='http://code.google.com/p/tgtools/',
       license='MIT',
       namespace_packages = ['tgext'],
-      install_requires     = ['TurboGears2 >= 2.0b1',
-                              'mapfish >= 1.0',
+      install_requires     = ['tg.devtools >= 2.0b4',
+                              'mapfish >= 1.1',
                               'TileCache >= 2.0'],
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
