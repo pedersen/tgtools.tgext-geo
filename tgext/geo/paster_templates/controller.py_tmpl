@@ -1,7 +1,8 @@
 from ${basePkg}.lib.base import *
 from ${basePkg}.model import DBSession
 from ${basePkg}.model.${modName} import ${modelClass}
-from tg import expose, request, response, postpone_commits
+from tg import expose, request, response
+from tg.decorators import postpone_commits
 from mapfish.lib.filters import *
 from mapfish.lib.protocol import Protocol, create_default_filter
 
