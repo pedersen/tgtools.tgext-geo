@@ -1,7 +1,0 @@
-
-      [paste.paster_command]
-      geo-controller = tgext.geo.commands:TGGeoControllerCommand
-      geo-model = tgext.geo.commands:TGGeoModelCommand
-      geo-layer = tgext.geo.commands:TGGeoLayerCommand
-      geo-tilecache = tgext.geo.commands:TGGeoTileCacheCommand
-      

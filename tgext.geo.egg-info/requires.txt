@@ -1,3 +1,0 @@
-tg.devtools >= 2.0b4
-MapFish >= 1.1
-TileCache >= 2.0
