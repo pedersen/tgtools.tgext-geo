@@ -1,10 +1,11 @@
-from ${basePkg}.lib.base import *
+from ${basePkg}.lib.base import BaseController
 from ${basePkg}.model import DBSession
 from ${basePkg}.model.${modName} import ${modelClass}
 from tg import expose, request, response
 from tg.decorators import postpone_commits
 from mapfish.lib.filters import *
 from mapfish.lib.protocol import Protocol, create_default_filter
+import simplejson
 
 class ${contrClass}Controller(BaseController):
     readonly = False # if set to True, only GET is supported
@@ -12,7 +13,7 @@ class ${contrClass}Controller(BaseController):
     def __init__(self):
         self.protocol = Protocol(DBSession, ${modelClass}, self.readonly)
 
-    @expose()
+    @expose('json')
     def index(self, format='json', **kw):
         """GET /: return all features."""
         #
@@ -35,12 +36,16 @@ class ${contrClass}Controller(BaseController):
         # filter = logical.Logical(logical.Logical.AND, [default_filter, compare_filter])
         # return self.protocol.index(request, response, format=format, filter=filter)
         #
-        return self.protocol.index(request, response, format=format)
+        features = simplejson.loads(self.protocol.index(
+                            request, response, format=format))
+        return features
 
-    @expose()
+    @expose('json')
     def show(self, id, format='json', **kw):
         """GET /id: Show a specific feature."""
-        return self.protocol.show(request, response, id, format=format)
+        feature = simplejson.loads(self.protocol.show(
+                            request, response, id, format=format))
+        return feature
 
     @expose()
     @postpone_commits
