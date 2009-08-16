@@ -48,10 +48,13 @@ class FeatureServerController(TGController):
                 path_info=request.path_info, params=request.GET, base_path= "")
              return resp
         elif request.method == 'POST':
-            response.content_type, resp = self.server.dispatchRequest(
+            if request.POST.keys():
+                data = request.POST.keys()[0]
+            else:
+                data = request.body
+            request.content_type, resp = self.server.dispatchRequest(
                 params=request.params, path_info=request.path_info,
-                base_path="", post_data=request.POST.keys()[0],
-                request_method="POST")
+                base_path="", post_data=data, request_method="POST")
             return resp
         elif request.method == 'DELETE':
             response.content_type, resp = self.server.dispatchRequest(
