@@ -1,0 +1,64 @@
+from tg import config, request, response, expose
+from tg.controllers import TGController, CUSTOM_CONTENT_TYPE
+from FeatureServer.Server import Server
+from datasource import GeoAlchemy
+
+
+class FeatureServerController(TGController):
+
+    def __init__(self, name, session):
+        self.model = config.get("geo.%s.model"%name, None)
+        self.cls = config.get("geo.%s.cls"%name, None)
+        self.table = config.get("geo.%s.table"%name, self.cls.lower())
+        self.layer = name
+        self.fid = config.get("geo.%s.fid"%name, "gid")
+        self.geometry = config.get("geo.%s.geometry"%name, "the_geom")
+        self.order = config.get("geo.%s.order"%name, self.fid)
+        self.srid = config.get("geo.%s.srid"%name, 4326)
+        self.dburi = config.get("sqlalchemy.url", None)
+        self.dburi = config.get("geo.%s.dburi"%name, self.dburi)
+        self.sql_echo = config.get("sqlalchemy.echo", None)
+        self.writable = config.get("geo.%s.writable"%name, False)
+        self.encoding = config.get("geo.%s.encoding"%name, "utf-8")
+        self.attribute_cols = config.get("geo.%s.attribute_cols"%name, "*")
+
+        datasource = GeoAlchemy(
+            self.layer, 
+            srid = self.srid,
+            fid = self.fid,
+            geometry = self.geometry,
+            order = self.order,
+            attribute_cols = self.attribute_cols,
+            writable = self.writable,
+            encoding = self.encoding,
+            session = session,
+            dburi = self.dburi,
+            sql_echo = self.sql_echo,
+            layer = self.layer,
+            model = self.model,
+            cls = self.cls
+        )
+
+        self.server = Server({self.layer: datasource})
+
+    @expose(content_type=CUSTOM_CONTENT_TYPE)
+    def default(self, *args, **kw):
+        if request.method == 'GET':
+             response.content_type, resp = self.server.dispatchRequest(
+                path_info=request.path_info, params=request.GET, base_path= "")
+             return resp
+        elif request.method == 'POST':
+            response.content_type, resp = self.server.dispatchRequest(
+                params=request.params, path_info=request.path_info,
+                base_path="", post_data=request.POST.keys()[0],
+                request_method="POST")
+            return resp
+        elif request.method == 'DELETE':
+            response.content_type, resp = featureserver.dispatchRequest(
+                params=request.params, path_info=request.path_info,
+                base_path="", post_data="", request_method="DELETE")
+            return resp
+        else:
+            flash("Unsupported method type %s" % request.method)
+            redirect (request.referer)
+
