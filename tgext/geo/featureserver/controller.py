@@ -54,7 +54,7 @@ class FeatureServerController(TGController):
                 request_method="POST")
             return resp
         elif request.method == 'DELETE':
-            response.content_type, resp = featureserver.dispatchRequest(
+            response.content_type, resp = self.server.dispatchRequest(
                 params=request.params, path_info=request.path_info,
                 base_path="", post_data="", request_method="DELETE")
             return resp
