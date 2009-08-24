@@ -24,6 +24,8 @@ class GeoAlchemy (DataSource):
         self.table          = args["layer"]
         self.fid_col        = fid
         self.geom_col       = geometry
+        self.geom_rel       = args["geom_rel"]
+        self.geom_cls       = args["geom_cls"]
         self.order          = order
         self.srid           = srid
         self.dburi          = args["dburi"]
@@ -55,8 +57,16 @@ class GeoAlchemy (DataSource):
         obj =  cls()
         for prop in feature.properties.keys():
             setattr(obj, prop, feature.properties[prop])
-        if feature.geometry:
+        if self.geom_rel and self.geom_cls:
+            geom_cls = getattr(model, self.geom_cls)
+            geom_obj = geom_cls()
+            setattr(geom_obj, self.geom_col, WKT.to_wkt(feature.geometry))
+            getattr(obj, self.geom_rel).append(geom_obj)
+            self.session.add(geom_obj)
+        elif feature.geometry:
             setattr(obj, self.geom_col, WKT.to_wkt(feature.geometry))
+        else:
+            pass
         self.session.add(obj)
         return self.select(action)
         
@@ -68,8 +78,14 @@ class GeoAlchemy (DataSource):
         obj = self.session.query(cls).get(int(action.id))
         for prop in feature.properties.keys():
             setattr(obj, prop, feature.properties[prop])
-        if feature.geometry:
+        if self.geom_rel and self.geom_cls:
+            geom_obj = getattr(obj, self.geom_rel)
+            setattr(geom_obj, self.geom_col, WKT.to_wkt(feature.geometry))
+            self.session.add(geom_obj)
+        elif feature.geometry:
             setattr(obj, self.geom_col, WKT.to_wkt(feature.geometry))
+        else:
+            pass
         self.session.add(obj)
         return self.select(action)
         
@@ -77,6 +93,9 @@ class GeoAlchemy (DataSource):
         model = __import__(self.model, fromlist=['*'])
         cls = getattr(model, self.cls)
         obj = self.session.query(cls).get(action.id)
+        if self.geom_rel and self.geom_col:
+            geom_obj = getattr(obj, self.geom_rel)
+            self.session.delete(geom_obj[-1])
         self.session.delete(obj)
         return []
 
@@ -105,6 +124,9 @@ class GeoAlchemy (DataSource):
             props = {}
             id = None
             geom = None
+            if self.geom_rel and self.geom_cls:
+                geom_obj = getattr(row, self.geom_rel)
+                geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj[-1], self.geom_col).wkt))
             for col in cls.__table__.c.keys():
                 if col == self.fid_col:
                     id = getattr(row, col)
