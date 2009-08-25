@@ -1,11 +1,12 @@
 from FeatureServer.DataSource import DataSource
 from vectorformats.Feature import Feature
 from vectorformats.Formats import WKT
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 
 import copy
 import datetime
+import operator
 
 try:
     import decimal
@@ -16,7 +17,16 @@ class GeoAlchemy (DataSource):
     """GeoAlchemy datasource. Setting up the table is beyond the scope of
        FeatureServer. However, GeoAlchemy supports table creation with
        geometry data types and can be used in a separate creation script."""
-    
+
+    query_action_types = ['lt', 'gt', 'ilike', 'like', 'gte', 'lte']
+
+    query_operators = {
+        'lt': operator.lt,
+        'gt': operator.gt,
+        'lte': operator.le,
+        'gte': operator.ge,
+    }
+
     def __init__(self, name, srid = 4326, fid = "gid", geometry = "the_geom", order = "", attribute_cols = '*', writable = True, encoding = "utf-8", session = None, **args):
         DataSource.__init__(self, name, **args)
         self.model          = args["model"]
@@ -38,6 +48,14 @@ class GeoAlchemy (DataSource):
         if not self.session:
             self.engine = create_engine(self.dburi, echo=self.sql_echo)
             self.session = sessionmaker(bind=self.engine)()
+
+    def feature_predicate(self, key,operator_name,value):
+        if operator_name == 'like':
+            return key.like('%'+value+'%')
+        elif operator_name == 'ilike':
+            return key.ilike('%'+value+'%')
+        else:
+            return self.query_operators[operator_name](key,value)
 
     def begin (self):
         pass
@@ -115,8 +133,12 @@ class GeoAlchemy (DataSource):
         else:
             query = self.session.query(cls)
             if action.attributes:
-                for attr in action.attributes:
-                    query = query.filter(getattr(cls, attr)==action.attributes[attr])
+                query = query.filter(
+                    and_(
+                        *[self.feature_predicate(getattr(cls, k), v['type'], v['value'])
+				for k, v in action.attributes.iteritems()]
+                    )
+                )
             if self.order:
                 query = query.order_by(self.order)
             if action.maxfeatures:
