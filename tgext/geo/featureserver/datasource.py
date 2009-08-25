@@ -3,6 +3,7 @@ from vectorformats.Feature import Feature
 from vectorformats.Formats import WKT
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
+from geoalchemy.base import WKTSpatialElement, _to_gis
 
 import copy
 import datetime
@@ -58,6 +59,10 @@ class GeoAlchemy (DataSource):
             return key.ilike('%'+value+'%')
         else:
             return self.query_operators[operator_name](key,value)
+
+    def bbox2wkt(self, bbox):
+        return "LINESTRING((%s %s, %s %s, %s %s, %s %s, %s %s))" % (bbox[0],
+        bbox[1],bbox[2],bbox[1],bbox[2],bbox[3],bbox[0],bbox[3],bbox[0],bbox[1])
 
     def begin (self):
         pass
@@ -130,10 +135,16 @@ class GeoAlchemy (DataSource):
     def select (self, action):
         model = __import__(self.model, fromlist=['*'])
         cls = getattr(model, self.cls)
+        geom_cls = None
+        if self.geom_cls:
+            geom_cls = getattr(model, self.geom_cls)
         if action.id is not None:
             result = [self.session.query(cls).get(action.id)]
         else:
-            query = self.session.query(cls)
+            if self.geom_rel and self.geom_cls:
+                query = self.session.query(cls, geom_cls)
+            else:
+                query = self.session.query(cls)
             if action.attributes:
                 query = query.filter(
                     and_(
@@ -141,6 +152,13 @@ class GeoAlchemy (DataSource):
 				for k, v in action.attributes.iteritems()]
                     )
                 )
+            if action.bbox:
+                if self.geom_rel and self.geom_cls:
+                    geom_element = getattr(geom_cls, self.geom_col)
+                else:
+                    geom_element = getattr(cls, self.geom_col)
+                query = query.filter(geom_element.intersects(
+                    _to_gis(self.bbox2wkt(action.bbox))))
             if self.order:
                 query = query.order_by(self.order)
             if action.maxfeatures:
