@@ -18,9 +18,11 @@ class GeoAlchemy (DataSource):
        FeatureServer. However, GeoAlchemy supports table creation with
        geometry data types and can be used in a separate creation script."""
 
-    query_action_types = ['lt', 'gt', 'ilike', 'like', 'gte', 'lte']
+    query_action_types = ['eq', 'ne', 'lt', 'gt', 'ilike', 'like', 'gte', 'lte']
 
     query_operators = {
+        'eq': operator.eq,
+        'ne': operator.ne,
         'lt': operator.lt,
         'gt': operator.gt,
         'lte': operator.le,
