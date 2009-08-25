@@ -61,7 +61,11 @@ class GeoAlchemy (DataSource):
             geom_cls = getattr(model, self.geom_cls)
             geom_obj = geom_cls()
             setattr(geom_obj, self.geom_col, WKT.to_wkt(feature.geometry))
-            getattr(obj, self.geom_rel).append(geom_obj)
+            try:
+                getattr(obj, self.geom_rel).append(geom_obj)
+            except:
+                # Handle specific exception
+                setattr(obj, self.geom_rel, geom_obj)
             self.session.add(geom_obj)
         elif feature.geometry:
             setattr(obj, self.geom_col, WKT.to_wkt(feature.geometry))
@@ -95,7 +99,11 @@ class GeoAlchemy (DataSource):
         obj = self.session.query(cls).get(action.id)
         if self.geom_rel and self.geom_col:
             geom_obj = getattr(obj, self.geom_rel)
-            self.session.delete(geom_obj[-1])
+            if isinstance(geom_obj, (tuple, list, dict, set)):
+                #TODO Should all related objects be purged
+                self.session.delete(geom_obj[-1])
+            else:
+                self.session.delete(geom_obj)
         self.session.delete(obj)
         return []
 
@@ -126,7 +134,12 @@ class GeoAlchemy (DataSource):
             geom = None
             if self.geom_rel and self.geom_cls:
                 geom_obj = getattr(row, self.geom_rel)
-                geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj[-1], self.geom_col).wkt))
+                if not geom_obj:
+                    continue
+                elif isinstance(geom_obj, (tuple, list, dict, set)):
+                    geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj[-1], self.geom_col).wkt))
+                else:
+                    geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj, self.geom_col).wkt))
             for col in cls.__table__.c.keys():
                 if col == self.fid_col:
                     id = getattr(row, col)
