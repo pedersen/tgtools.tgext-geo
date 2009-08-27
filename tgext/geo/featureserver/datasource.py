@@ -3,7 +3,6 @@ from vectorformats.Feature import Feature
 from vectorformats.Formats import WKT
 from sqlalchemy import create_engine, and_, func
 from sqlalchemy.orm import sessionmaker
-from geoalchemy.base import WKTSpatialElement, _to_gis
 
 import copy
 import datetime
@@ -143,14 +142,18 @@ class GeoAlchemy (DataSource):
             result = [self.session.query(cls).get(action.id)]
         else:
             if self.geom_rel and self.geom_cls:
-                join_condition = self.join_condition or "%s.%s_id=%s.id" % (cls.__tablename__, geom_cls.__tablename__, geom_cls.__tablename__)
+                main_table = cls.__tablename__
+                geom_table = geom_cls.__tablename__
+                join_condition = self.join_condition or "%s.%s_id=%s.id" % (
+			main_table, geom_table, geom_table)
                 query = self.session.query(cls, geom_cls).filter(join_condition)
             else:
                 query = self.session.query(cls)
             if action.attributes:
                 query = query.filter(
                     and_(
-                        *[self.feature_predicate(getattr(cls, k), v['type'], v['value'])
+                        *[self.feature_predicate(getattr(cls, k),
+				v['type'], v['value'])
 				for k, v in action.attributes.iteritems()]
                     )
                 )
@@ -160,7 +163,8 @@ class GeoAlchemy (DataSource):
                 else:
                     geom_element = getattr(cls, self.geom_col)
                 query = query.filter(geom_element.intersects(
-                    self.session.scalar(func.GeomFromText(self.bbox2wkt(action.bbox), self.srid))))
+                    self.session.scalar(func.GeomFromText(
+			self.bbox2wkt(action.bbox), self.srid))))
             if self.order:
                 query = query.order_by(getattr(cls, self.order))
             if action.maxfeatures:
@@ -172,31 +176,36 @@ class GeoAlchemy (DataSource):
             result = query.all()
 
         features = []
-        for row in result:
+        for row_tuple in result:
             props = {}
             id = None
             geom = None
-            if self.geom_rel and self.geom_cls:
-                row = row[0]
-                geom_obj = getattr(row, self.geom_rel)
-                if not geom_obj:
-                    continue
-                elif isinstance(geom_obj, (tuple, list, dict, set)):
-                    geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj[-1], self.geom_col).wkt))
+            if not isinstance(row_tuple, (tuple, list, dict, set)):
+                row_tuple = (row_tuple,)
+            for  row in row_tuple:
+                if isinstance(row, cls):
+                    cols = cls.__table__.c.keys()
+                    for col in cols:
+                        if col == self.fid_col:
+                            id = getattr(row, col)
+                        elif col == self.geom_col:
+                            geom = WKT.from_wkt(self.session.scalar(getattr(row, col).wkt))
+                        else:
+                            if self.attribute_cols == '*' or col in self.attribute_cols:
+                                props[col] = getattr(row, col)
+                elif isinstance(row, geom_cls) and geom_cls:
+                    cols = geom_cls.__table__.c.keys()
+                    for col in cols:
+                        if col == self.fid_col:
+                            pass
+                        elif col == self.geom_col:
+                            geom = WKT.from_wkt(self.session.scalar(getattr(row, col).wkt))
+                        else:
+                            if self.attribute_cols == '*' or col in self.attribute_cols:
+                                props[col] = getattr(row, col)
                 else:
-                    geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj, self.geom_col).wkt))
-            cols = cls.__table__.c.keys()
-            if self.geom_rel and self.geom_cls:
-                cols += geom_cls.__table__.c.keys()
-            #for col in cls.__table__.c.keys():
-            for col in cols:
-                if col == self.fid_col:
-                    id = getattr(row, col)
-                elif col == self.geom_col:
-                    geom = WKT.from_wkt(self.session.scalar(getattr(row, col).wkt))
-                else:
-                    if self.attribute_cols == '*' or col in self.attribute_cols:
-                        props[col] = getattr(row, col)
+                   continue
+
             for key, value in props.items():
                 if isinstance(value, str): 
                     props[key] = unicode(value, self.encoding)
