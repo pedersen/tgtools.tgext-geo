@@ -15,6 +15,7 @@ class FeatureServerController(TGController):
         self.geometry = config.get("geo.%s.geometry"%name, "the_geom")
         self.geom_rel = config.get("geo.%s.geom_rel"%name, None)
         self.geom_cls = config.get("geo.%s.geom_cls"%name, None)
+        self.join_condition = config.get("geo.%s.join_condition"%name, None)
         self.order = config.get("geo.%s.order"%name, self.fid)
         self.srid = config.get("geo.%s.srid"%name, 4326)
         self.dburi = config.get("sqlalchemy.url", None)
@@ -40,6 +41,7 @@ class FeatureServerController(TGController):
             model = self.model,
             geom_rel = self.geom_rel,
             geom_cls = self.geom_cls,
+            join_condition = self.join_condition,
             cls = self.cls
         )
 

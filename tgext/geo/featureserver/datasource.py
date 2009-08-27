@@ -1,7 +1,7 @@
 from FeatureServer.DataSource import DataSource
 from vectorformats.Feature import Feature
 from vectorformats.Formats import WKT
-from sqlalchemy import create_engine, and_
+from sqlalchemy import create_engine, and_, func
 from sqlalchemy.orm import sessionmaker
 from geoalchemy.base import WKTSpatialElement, _to_gis
 
@@ -39,6 +39,7 @@ class GeoAlchemy (DataSource):
         self.geom_col       = geometry
         self.geom_rel       = args["geom_rel"]
         self.geom_cls       = args["geom_cls"]
+        self.join_condition = args["join_condition"]
         self.order          = order
         self.srid           = srid
         self.dburi          = args["dburi"]
@@ -61,8 +62,8 @@ class GeoAlchemy (DataSource):
             return self.query_operators[operator_name](key,value)
 
     def bbox2wkt(self, bbox):
-        return "LINESTRING((%s %s, %s %s, %s %s, %s %s, %s %s))" % (bbox[0],
-        bbox[1],bbox[2],bbox[1],bbox[2],bbox[3],bbox[0],bbox[3],bbox[0],bbox[1])
+        return "POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))" % (bbox[1],
+        bbox[0],bbox[1],bbox[2],bbox[3],bbox[2],bbox[3],bbox[0],bbox[1],bbox[0])
 
     def begin (self):
         pass
@@ -142,7 +143,8 @@ class GeoAlchemy (DataSource):
             result = [self.session.query(cls).get(action.id)]
         else:
             if self.geom_rel and self.geom_cls:
-                query = self.session.query(cls, geom_cls)
+                join_condition = self.join_condition or "%s.%s_id=%s.id" % (cls.__tablename__, geom_cls.__tablename__, geom_cls.__tablename__)
+                query = self.session.query(cls, geom_cls).filter(join_condition)
             else:
                 query = self.session.query(cls)
             if action.attributes:
@@ -158,9 +160,9 @@ class GeoAlchemy (DataSource):
                 else:
                     geom_element = getattr(cls, self.geom_col)
                 query = query.filter(geom_element.intersects(
-                    _to_gis(self.bbox2wkt(action.bbox))))
+                    self.session.scalar(func.GeomFromText(self.bbox2wkt(action.bbox), self.srid))))
             if self.order:
-                query = query.order_by(self.order)
+                query = query.order_by(getattr(cls, self.order))
             if action.maxfeatures:
                 query.limit(action.maxfeatures)
             else:   
@@ -175,6 +177,7 @@ class GeoAlchemy (DataSource):
             id = None
             geom = None
             if self.geom_rel and self.geom_cls:
+                row = row[0]
                 geom_obj = getattr(row, self.geom_rel)
                 if not geom_obj:
                     continue
@@ -182,7 +185,11 @@ class GeoAlchemy (DataSource):
                     geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj[-1], self.geom_col).wkt))
                 else:
                     geom = WKT.from_wkt(self.session.scalar(getattr(geom_obj, self.geom_col).wkt))
-            for col in cls.__table__.c.keys():
+            cols = cls.__table__.c.keys()
+            if self.geom_rel and self.geom_cls:
+                cols += geom_cls.__table__.c.keys()
+            #for col in cls.__table__.c.keys():
+            for col in cols:
                 if col == self.fid_col:
                     id = getattr(row, col)
                 elif col == self.geom_col:
