@@ -204,7 +204,7 @@ class GeoAlchemy (DataSource):
                             if self.attribute_cols == '*' or col in self.attribute_cols:
                                 props[col] = getattr(row, col)
                 else:
-                   continue
+                    continue
 
             for key, value in props.items():
                 if isinstance(value, str): 
