@@ -6,7 +6,7 @@ from datasource import GeoAlchemy
 
 class FeatureServerController(TGController):
 
-    def __init__(self, name, session):
+    def __init__(self, name, session, allow_only=None):
         self.model = config.get("geo.%s.model"%name, None)
         self.cls = config.get("geo.%s.cls"%name, None)
         self.table = config.get("geo.%s.table"%name, self.cls.lower())
@@ -46,6 +46,8 @@ class FeatureServerController(TGController):
         )
 
         self.server = Server({self.layer: datasource})
+        self.allow_only = allow_only
+        super(FeatureServerController, self).__init__()
 
     @expose(content_type=CUSTOM_CONTENT_TYPE)
     def default(self, *args, **kw):
