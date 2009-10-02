@@ -29,24 +29,26 @@ class GeoAlchemy (DataSource):
         'gte': operator.ge,
     }
 
-    def __init__(self, name, srid = 4326, fid = "gid", geometry = "the_geom", order = "", attribute_cols = '*', writable = True, encoding = "utf-8", session = None, **args):
+    def __init__(self, name, srid=4326, fid="gid", geometry="the_geom",
+            order="", attribute_cols='*', writable=True, encoding="utf-8",
+            geom_cls=None, geom_rel=None, join_condition=None, sql_echo=False,
+            session=None, **args):
         DataSource.__init__(self, name, **args)
+        self.dburi          = args["dburi"]
+        self.sql_echo       = sql_echo
+        self.session        = session
         self.model          = args["model"]
         self.cls            = args["cls"]
-        self.table          = args["layer"]
         self.fid_col        = fid
         self.geom_col       = geometry
-        self.geom_rel       = args["geom_rel"]
-        self.geom_cls       = args["geom_cls"]
-        self.join_condition = args["join_condition"]
+        self.geom_rel       = geom_rel
+        self.geom_cls       = geom_cls
+        self.join_condition = join_condition
         self.order          = order
         self.srid           = srid
-        self.dburi          = args["dburi"]
-        self.sql_echo       = args["sql_echo"] or False
         self.writable       = writable
         self.encoding       = encoding
         self.attribute_cols = attribute_cols
-        self.session        = session
 
         if not self.session:
             self.engine = create_engine(self.dburi, echo=self.sql_echo)
