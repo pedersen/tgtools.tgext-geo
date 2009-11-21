@@ -24,6 +24,7 @@ class FeatureServerController(TGController):
         self.writable = config.get("geo.%s.writable"%name, False)
         self.encoding = config.get("geo.%s.encoding"%name, "utf-8")
         self.attribute_cols = config.get("geo.%s.attribute_cols"%name, "*")
+        self.attribute_ignore = config.get("geo.%s.attribute_ignore"%name, [])
 
         datasource = GeoAlchemy(
             self.layer, 
@@ -32,6 +33,7 @@ class FeatureServerController(TGController):
             geometry = self.geometry,
             order = self.order,
             attribute_cols = self.attribute_cols,
+            attribute_ignore = self.attribute_ignore,
             writable = self.writable,
             encoding = self.encoding,
             session = session,

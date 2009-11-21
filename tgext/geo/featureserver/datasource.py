@@ -30,9 +30,9 @@ class GeoAlchemy (DataSource):
     }
 
     def __init__(self, name, srid=4326, fid="gid", geometry="the_geom",
-            order="", attribute_cols='*', writable=True, encoding="utf-8",
-            geom_cls=None, geom_rel=None, join_condition=None, sql_echo=False,
-            session=None, **args):
+            order="", attribute_cols='*', attribute_ignore=[], writable=True,
+            encoding="utf-8", geom_cls=None, geom_rel=None,
+            join_condition=None, sql_echo=False, session=None, **args):
         DataSource.__init__(self, name, **args)
         self.dburi          = args["dburi"]
         self.sql_echo       = sql_echo
@@ -49,6 +49,7 @@ class GeoAlchemy (DataSource):
         self.writable       = writable
         self.encoding       = encoding
         self.attribute_cols = attribute_cols
+        self.attribute_ignore = attribute_ignore
 
         if not self.session:
             self.engine = create_engine(self.dburi, echo=self.sql_echo)
@@ -191,20 +192,24 @@ class GeoAlchemy (DataSource):
                         if col == self.fid_col:
                             id = getattr(row, col)
                         elif col == self.geom_col:
-                            geom = WKT.from_wkt(self.session.scalar(getattr(row, col).wkt))
+                            geom = getattr(row, col) and WKT.from_wkt(
+                                self.session.scalar(getattr(row, col).wkt))
                         else:
                             if self.attribute_cols == '*' or col in self.attribute_cols:
-                                props[col] = getattr(row, col)
+                                if col not in self.attribute_ignore:
+                                    props[col] = getattr(row, col)
                 elif isinstance(row, geom_cls) and geom_cls:
                     cols = geom_cls.__table__.c.keys()
                     for col in cols:
                         if col == self.fid_col:
                             pass
                         elif col == self.geom_col:
-                            geom = WKT.from_wkt(self.session.scalar(getattr(row, col).wkt))
+                            geom = getattr(row, col) and WKT.from_wkt(
+                                self.session.scalar(getattr(row, col).wkt))
                         else:
                             if self.attribute_cols == '*' or col in self.attribute_cols:
-                                props[col] = getattr(row, col)
+                                if col not in self.attribute_ignore:
+                                    props[col] = getattr(row, col)
                 else:
                     continue
 
