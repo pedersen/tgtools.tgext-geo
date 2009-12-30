@@ -64,8 +64,8 @@ class GeoAlchemy (DataSource):
             return self.query_operators[operator_name](key,value)
 
     def bbox2wkt(self, bbox):
-        return "POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))" % (bbox[1],
-        bbox[0],bbox[1],bbox[2],bbox[3],bbox[2],bbox[3],bbox[0],bbox[1],bbox[0])
+        return "POLYGON((%s %s, %s %s, %s %s, %s %s, %s %s))" % (bbox[0],
+        bbox[1],bbox[0],bbox[3],bbox[2],bbox[3],bbox[2],bbox[1],bbox[0],bbox[1])
 
     def begin (self):
         pass
