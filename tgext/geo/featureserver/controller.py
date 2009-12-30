@@ -1,6 +1,7 @@
 from tg import config, request, response, expose
 from tg.controllers import TGController, CUSTOM_CONTENT_TYPE
 from FeatureServer.Server import Server
+import cgi as cgimod
 from datasource import GeoAlchemy
 
 
@@ -53,9 +54,15 @@ class FeatureServerController(TGController):
 
     @expose(content_type=CUSTOM_CONTENT_TYPE)
     def default(self, *args, **kw):
+        params = {}
+        if request.environ.has_key('QUERY_STRING'):
+            for key, value in cgimod.parse_qsl(
+                request.environ['QUERY_STRING'], keep_blank_values=True):
+                params[key.lower()] = value
+
         if request.method == 'GET':
              response.content_type, resp = self.server.dispatchRequest(
-                path_info=request.path_info, params=request.GET, base_path= "")
+                path_info=request.path_info, params=params, base_path= "")
              return resp
         elif request.method == 'POST':
             if request.POST.keys():
@@ -63,12 +70,12 @@ class FeatureServerController(TGController):
             else:
                 data = request.body
             request.content_type, resp = self.server.dispatchRequest(
-                params=request.params, path_info=request.path_info,
+                params=params, path_info=request.path_info,
                 base_path="", post_data=data, request_method="POST")
             return resp
         elif request.method == 'DELETE':
             response.content_type, resp = self.server.dispatchRequest(
-                params=request.params, path_info=request.path_info,
+                params=params, path_info=request.path_info,
                 base_path="", post_data="", request_method="DELETE")
             return resp
         else:
