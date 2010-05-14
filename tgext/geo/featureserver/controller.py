@@ -1,5 +1,5 @@
 from tg import config, request, response, expose
-from tg.controllers import TGController, CUSTOM_CONTENT_TYPE
+from tg.controllers import TGController
 from FeatureServer.Server import Server
 import cgi as cgimod
 from datasource import GeoAlchemy
@@ -52,7 +52,7 @@ class FeatureServerController(TGController):
         self.allow_only = allow_only
         super(FeatureServerController, self).__init__()
 
-    @expose(content_type=CUSTOM_CONTENT_TYPE)
+    @expose()
     def default(self, *args, **kw):
         params = {}
         if request.environ.has_key('QUERY_STRING'):
@@ -61,20 +61,20 @@ class FeatureServerController(TGController):
                 params[key.lower()] = value
 
         if request.method == 'GET':
-             response.content_type, resp = self.server.dispatchRequest(
+            response.headers['Content-type'],resp = self.server.dispatchRequest(
                 path_info=request.path_info, params=params, base_path= "")
-             return resp
+            return resp
         elif request.method == 'POST':
             if request.POST.keys():
                 data = request.POST.keys()[0]
             else:
                 data = request.body
-            request.content_type, resp = self.server.dispatchRequest(
+            response.headers['Content-type'],resp = self.server.dispatchRequest(
                 params=params, path_info=request.path_info,
                 base_path="", post_data=data, request_method="POST")
             return resp
         elif request.method == 'DELETE':
-            response.content_type, resp = self.server.dispatchRequest(
+            response.headers['Content-type'],resp = self.server.dispatchRequest(
                 params=params, path_info=request.path_info,
                 base_path="", post_data="", request_method="DELETE")
             return resp
